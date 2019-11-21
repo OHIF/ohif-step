@@ -1,10 +1,11 @@
 import glConstants from "./glConstants";
+import step from "./step";
 
 // populates Fields with data based on inputs
 export default class Generator {
   // TODO: unify with Space
   constructor(options = {}) {
-    this.useIntegerTextures = Generator.useIntegerTextures;
+    this.useIntegerTextures = step.useIntegerTextures;
     this.gl = options.gl;
     this.uniforms = options.uniforms || {};
     this.inputFields = options.inputFields || [];
@@ -17,6 +18,7 @@ export default class Generator {
     // TODO: support for reading back transform arrays
     this.sliceViewArrayType = Int16Array;
     this.sliceViewBytesPerElement = 2;
+
     if (this.useIntegerTextures) {
       this.samplerType = "isampler3D";
       this.bufferType = "int";
@@ -67,4 +69,3 @@ export default class Generator {
     return name;
   }
 }
-Generator.useIntegerTextures = false; // default

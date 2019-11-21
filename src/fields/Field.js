@@ -1,11 +1,8 @@
-import ImageField from "./ImageField";
-import SegmentationField from "./SegmentationField";
-import TransformField from "./TransformField";
-import dcmjs from "dcmjs";
+import step from "../step";
 
 export default class Field {
   constructor(options = {}) {
-    this.useIntegerTextures = Field.useIntegerTextures;
+    this.useIntegerTextures = step.useIntegerTextures;
     this.id = Field.nextId;
     this.texture = undefined;
     this.modifiedTime = Number.MAX_VALUE;
@@ -100,15 +97,24 @@ export default class Field {
     // return an object of the current uniform values
     let u = {};
 
-    u["visible" + this.id] = { type: "1i", value: this.visible };
-    u["rgba" + this.id] = { type: "4fv", value: this.rgba };
-    u["gradientOpacityScale" + this.id] = {
+    const {
+      id,
+      visible,
+      rgba,
+      gradientOpacityScale,
+      transformField,
+      transformGain
+    } = this;
+
+    u["visible" + id] = { type: "1i", value: visible };
+    u["rgba" + id] = { type: "4fv", value: rgba };
+    u["gradientOpacityScale" + id] = {
       type: "1f",
-      value: this.gradientOpacityScale
+      value: gradientOpacityScale
     };
-    u["textureUnit" + this.id] = { type: "1i", value: this.id };
-    if (this.transformField) {
-      u["transformGain" + this.id] = { type: "1f", value: this.transformGain };
+    u["textureUnit" + id] = { type: "1i", value: id };
+    if (transformField) {
+      u["transformGain" + id] = { type: "1f", value: transformGain };
     }
     return u;
   }
@@ -132,58 +138,3 @@ export default class Field {
   }
 }
 Field.nextId = 0; // TODO: for now this is texture unit
-Field.useIntegerTextures = false; // default, but possibly overridden based on gl env
-
-// array of fields from dataset
-Field.fromDataset = function(dataset) {
-  let fields = [];
-  let sopClassName =
-    dcmjs.data.DicomMetaDictionary.sopClassNamesByUID[dataset.SOPClassUID];
-
-  switch (sopClassName) {
-    case "CTImage":
-    case "MRImage":
-    case "EnhancedCTImage":
-    case "LegacyConvertedEnhancedCTImage":
-    case "UltrasoundMultiframeImage":
-    case "EnhancedMRImage":
-    case "MRSpectroscopy":
-    case "EnhancedMRColorImage":
-    case "LegacyConvertedEnhancedMRImage":
-    case "UltrasoundImage":
-    case "EnhancedUSVolume":
-    case "SecondaryCaptureImage":
-    case "USImage":
-    case "PETImage":
-    case "EnhancedPETImage":
-    case "LegacyConvertedEnhancedPETImage":
-      {
-        fields = [new ImageField({ dataset })];
-      }
-      break;
-    case "Segmentation":
-      {
-        fields = SegmentationField.fieldsFromDataset({ dataset });
-      }
-      break;
-    case "DeformableSpatialRegistration":
-      {
-        fields = [new TransformField({ dataset })];
-      }
-      break;
-    default: {
-      console.error("Cannot process this dataset type ", dataset);
-    }
-
-    /* TODO
-       "Raw Data",
-       "Spatial Registration",
-       "Spatial Fiducials",
-       "Real World Value Mapping",
-       "BasicTextSR",
-       "EnhancedSR",
-       "ComprehensiveSR",
-     */
-  }
-  return fields;
-};

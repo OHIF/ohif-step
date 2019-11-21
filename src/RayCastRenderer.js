@@ -1,6 +1,8 @@
 import ProgrammaticGenerator from "./ProgrammaticGenerator";
 import linear from "./linear";
 
+const rayCompositingTypes = ["integration", "maximum", "minimum"];
+
 export default class RayCastRenderer extends ProgrammaticGenerator {
   // Last link in a chain, renders to the default frame buffer
   // using ray cast shader program
@@ -8,13 +10,17 @@ export default class RayCastRenderer extends ProgrammaticGenerator {
   constructor(options = {}) {
     super(options);
     this.canvas = options.canvas;
-    this.rayCompositing = options.rayCompositing || "integration";
-    if (!(this.rayCompositing in ["integration", "maximum", "minimum"])) {
+
+    let rayCompositing = options.rayCompositing || "integration";
+
+    if (!rayCompositingTypes.includes(rayCompositing)) {
       console.error(
-        `Unknown rayCompositing option ${this.rayCompositing}, using integration`
+        `Unknown rayCompositing option ${rayCompositing}, using integration`
       );
-      this.rayCompositing = "integration";
+      rayCompositing = "integration";
     }
+
+    this.rayCompositing = rayCompositing;
     this.maximumCompositingField = options.maximumCompositingField || 0;
     this.renderRequestTimeout = options.renderRequestTimeout || 100;
 

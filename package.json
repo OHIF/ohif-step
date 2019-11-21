@@ -2,9 +2,10 @@
   "name": "ohif-step",
   "version": "0.0.1",
   "description": "Implements functionality from STEP into a reusable npm package.",
-  "main": "lib/ohif-step-fields.js",
+  "main": "lib/ohif-step.min.js",
+  "module": "src/index.js",
   "scripts": {
-    "build": "webpack --env dev && webpack --env build && npm run test",
+    "build": "webpack --env dev && webpack --env build",
     "dev": "webpack --progress --colors --watch --env dev",
     "test": "mocha --require babel-register --colors ./test/*.spec.js",
     "test:watch": "mocha --require babel-register --colors -w ./test/*.spec.js",

@@ -28,82 +28,89 @@ export default class GrowCutGenerator extends ProgrammaticGenerator {
 
   _fragmentShaderSource() {
     return `${this.headerSource()}
-        // these are the function definitions for sampleVolume*
-        // and transferFunction*
-        // that define a field at a sample point in space
-        ${function() {
-          let perFieldSamplingShaderSource = "";
+    // these are the function definitions for sampleVolume*
+    // and transferFunction*
+    // that define a field at a sample point in space
+    ${function() {
+      let perFieldSamplingShaderSource = "";
 
-          this.inputFields.forEach(field => {
-            perFieldSamplingShaderSource += field.transformShaderSource();
-            perFieldSamplingShaderSource += field.samplingShaderSource();
-          });
-          return perFieldSamplingShaderSource;
-        }.bind(this)()}
-  
-        #define MAX_STRENGTH ${this.bufferType}(10000)
-  
-        uniform int iterations;
-        uniform int iteration;
-  
-        uniform ${this.samplerType} inputTexture0; // background
-        uniform ${this.samplerType} inputTexture1; // label
-        uniform ${this.samplerType} inputTexture2; // strength
-  
-        in vec3 interpolatedTextureCoordinate;
-  
-        layout(location = 0) out ${this.bufferType} label;
-        layout(location = 1) out ${this.bufferType} strength;
-  
-        void main()
-        {
-          ivec3 size = textureSize(inputTexture0, 0);
-          ivec3 texelIndex = ivec3(floor(interpolatedTextureCoordinate * vec3(size)));
-          ${
-            this.bufferType
-          } background = texelFetch(inputTexture0, texelIndex, 0).r;
-  
-          if (iteration == 0) {
-            if (background < ${this.bufferType}(10)) {
-              label = ${this.bufferType}(30);
-              strength = MAX_STRENGTH;
-            } else if (background > ${this.bufferType}(100)) {
-              label = ${this.bufferType}(100);
-              strength = MAX_STRENGTH;
-            } else {
-              label = ${this.bufferType}(0);
-              strength = ${this.bufferType}(0);
-            }
-          } else {
-            label = texelFetch(inputTexture1, texelIndex, 0).r;
-            strength = texelFetch(inputTexture2, texelIndex, 0).r;
-            for (int k = -1; k <= 1; k++) {
-              for (int j = -1; j <= 1; j++) {
-                for (int i = -1; i <= 1; i++) {
-                  if (i != 0 && j != 0 && k != 0) {
-                    ivec3 neighborIndex = texelIndex + ivec3(i,j,k);
-                    ${
-                      this.bufferType
-                    } neighborBackground = texelFetch(inputTexture0, neighborIndex, 0).r;
-                    ${
-                      this.bufferType
-                    } neighborStrength = texelFetch(inputTexture2, neighborIndex, 0).r;
-                    ${
-                      this.bufferType
-                    } strengthCost = abs(neighborBackground - background);
-                    ${
-                      this.bufferType
-                    } takeoverStrength = neighborStrength - strengthCost;
-                    if (takeoverStrength > strength) {
-                      strength = takeoverStrength;
-                      label = texelFetch(inputTexture1, neighborIndex, 0).r;
-                    }
-                  }
+      this.inputFields.forEach(field => {
+        perFieldSamplingShaderSource += field.transformShaderSource();
+        perFieldSamplingShaderSource += field.samplingShaderSource();
+      });
+      return perFieldSamplingShaderSource;
+    }.bind(this)()}
+
+    #define MAX_STRENGTH ${this.bufferType}(65535)
+
+    uniform int iterations;
+    uniform int iteration;
+
+    uniform ${this.samplerType} inputTexture0; // background
+    uniform ${this.samplerType} inputTexture1; // label
+    uniform ${this.samplerType} inputTexture2; // strength
+
+    in vec3 interpolatedTextureCoordinate;
+
+    layout(location = 0) out ${this.bufferType} label;
+    layout(location = 1) out ${this.bufferType} strength;
+
+    void main()
+    {
+      ivec3 size = textureSize(inputTexture0, 0);
+      ivec3 texelIndex = ivec3(floor(interpolatedTextureCoordinate * vec3(size)));
+      ${
+        this.bufferType
+      } background = texelFetch(inputTexture0, texelIndex, 0).r;
+
+      label = texelFetch(inputTexture1, texelIndex, 0).r;
+      
+      // TODO: Grow until label does not change, then stop.
+
+      if (iteration == 0) {
+        // All non-zero initial labels are given maximum strength
+        if (label == ${this.bufferType}(0)) {
+          strength = ${this.bufferType}(0);
+        } else {
+          strength = MAX_STRENGTH;
+        }
+      } else {
+        strength = texelFetch(inputTexture2, texelIndex, 0).r;
+        int window = 4;
+        for (int k = -1 * window; k <= 1 * window; k++) {
+          for (int j = -1 * window; j <= 1 * window; j++) {
+            for (int i = -1 * window; i <= 1 * window; i++) {
+              if (i != 0 && j != 0 && k != 0) {
+                ivec3 neighborIndex = texelIndex + ivec3(i,j,k);
+                
+                // Boundary conditions. Do not grow outside of the volume
+                if (any( lessThan( neighborIndex, ivec3(0,0,0) ) ) ||
+                    any( greaterThanEqual( neighborIndex, size ) )) {
+                  continue;
+                }
+                
+                ${
+                  this.bufferType
+                } neighborBackground = texelFetch(inputTexture0, neighborIndex, 0).r;
+                ${
+                  this.bufferType
+                } neighborStrength = texelFetch(inputTexture2, neighborIndex, 0).r;
+                ${
+                  this.bufferType
+                } strengthCost = abs(neighborBackground - background);
+                ${
+                  this.bufferType
+                } takeoverStrength = neighborStrength - strengthCost;
+                if (takeoverStrength > strength) {
+                  strength = takeoverStrength;
+                  label = texelFetch(inputTexture1, neighborIndex, 0).r;
                 }
               }
             }
           }
         }
-      `;
+      }
+    }
+  `;
   }
 }

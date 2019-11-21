@@ -1,5 +1,5 @@
 import Field from "./Field";
-import { mat4, vec3, vec4 } from "gl-matrix";
+import * as glMatrix from "gl-matrix";
 
 export default class PixelField extends Field {
   constructor(options = {}) {
@@ -22,6 +22,8 @@ export default class PixelField extends Field {
   }
 
   sliceStepFromOrientation(orientation) {
+    const { vec3 } = glMatrix;
+
     let columnStepToPatient = vec3.fromValues(...orientation.slice(0, 3));
     let rowStepToPatient = vec3.fromValues(...orientation.slice(3, 6));
     let sliceStepToPatient = vec3.create();
@@ -65,6 +67,7 @@ export default class PixelField extends Field {
       spacingBetweenSlices
     ] = this.spacing();
 
+    const { vec3, vec4, mat4 } = glMatrix;
     let orientation = this.orientation();
     let sliceStepToPatient = this.sliceStepFromOrientation(orientation);
     let columnStepToPatient = vec3.fromValues(...orientation.slice(0, 3));

@@ -35,6 +35,11 @@ export default class ProgrammaticGenerator extends Generator {
     this.framebuffer = gl.createFramebuffer();
   }
 
+  reset() {
+    this.inputFields = [];
+    this.updateProgram();
+  }
+
   headerSource() {
     return `#version 300 es
           precision highp float;
@@ -100,6 +105,7 @@ export default class ProgrammaticGenerator extends Generator {
     gl.attachShader(this.program, this.fragmentShader);
     gl.deleteShader(this.fragmentShader);
     gl.linkProgram(this.program);
+
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
       this.logWithLineNumbers(this.fragmentShaderSource);
       console.error("Could not link program");
