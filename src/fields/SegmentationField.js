@@ -1,5 +1,5 @@
 import PixelField from "./PixelField";
-import dcmjs from "dcmjs";
+import * as dcmjs from "dcmjs";
 
 export default class SegmentationField extends PixelField {
   constructor(options = {}) {
