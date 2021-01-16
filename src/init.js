@@ -10,9 +10,10 @@ export default function init() {
   const gl = canvas.getContext("webgl2");
 
   if (!gl) {
-    alert(
+    console.error(
       "Sorry, it looks like your browser does not support webgl2.  Try firefox."
     );
+    return;
   }
 
   // Check if our gl supports float textures and if
